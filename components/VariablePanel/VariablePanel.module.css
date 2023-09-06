@@ -1,0 +1,25 @@
+.root {
+  display: grid;
+  position: relative;
+  gap: 16px;
+  grid-template-columns: 1fr 2fr;
+  min-height: 160px;
+}
+
+.result {
+  background: #eeeeee;
+  font-size: rem(12px);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.height100 {
+  height: 100%;
+}
+
+.trashIcon {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  opacity: 0.5;
+}
