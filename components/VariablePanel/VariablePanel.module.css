@@ -6,6 +6,12 @@
   min-height: 160px;
 }
 
+.noVariablesRoot {
+  display: grid;
+  position: relative;
+  min-height: 160px;
+}
+
 .result {
   background: #eeeeee;
   font-size: rem(12px);

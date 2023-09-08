@@ -7,6 +7,9 @@ import { getValidVariableValues } from '../..//util';
 export type CasePanelProps = {
   promptVariableNames: Prompt['promptVariableNames'];
   cases: Case[];
+  isCallingLLM: boolean;
+  loadingCaseId: string | null;
+  isReadOnly: boolean;
   onChange: (caseId: string, variableValues: VariableValue[]) => void;
   onDelete: (caseId: string) => void;
   onAddCase: () => void;
@@ -20,17 +23,23 @@ export const CasePanel: React.FC<CasePanelProps> = (props) => (
           key={x.id}
           variableValues={getValidVariableValues(x, props.promptVariableNames)}
           result={x.result}
+          isDisabled={props.isCallingLLM}
+          isReadOnly={props.isReadOnly}
+          isLoading={props.loadingCaseId === x.id}
           onChange={(value) => props.onChange(x.id, value)}
           onDelete={() => props.onDelete(x.id)}
         />
       ))}
       <Group justify="space-between">
-        <Button size="xs" color="gray" variant="outline" onClick={props.onAddCase}>
+        <Button
+          size="xs"
+          color="gray"
+          variant="outline"
+          onClick={props.onAddCase}
+          disabled={props.isCallingLLM || props.isReadOnly}
+        >
           Add Case
         </Button>
-        {/* <Button size="xs" color="gray" variant="outline">
-          Load Cases from CSV
-        </Button> */}
       </Group>
     </Stack>
   </InputWrapper>

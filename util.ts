@@ -1,5 +1,13 @@
 import { ComboboxItem } from '@mantine/core';
-import { CallLLMRequest, Case, ModelIds, Prompt, Snapshot, VariableValue } from './type';
+import {
+  CallLLMRequest,
+  Case,
+  ModelIds,
+  Prompt,
+  PromptTesterConfig,
+  Snapshot,
+  VariableValue,
+} from './type';
 import dayjs from 'dayjs';
 
 export const getItem: <TItem extends { id: string }>(
@@ -23,7 +31,7 @@ export const updateItemList: <TItem extends { id: string }>(
   const updatedItem = updateFn(currentItem);
   if (isUpdateOrder) {
     delete list[currentItemIndex];
-    return [updatedItem, ...list];
+    return [updatedItem, ...list.filter((x) => x)];
   }
   list[currentItemIndex] = updatedItem;
   return [...list];
@@ -39,7 +47,9 @@ export const snapshotListToSelectOptions: (snapshotList: Snapshot[]) => Combobox
   snapshotList
 ) => {
   return snapshotList.map((x) => {
-    const label = x.recordedAt ? dayjs(x.recordedAt).format('YYYY-MM-DD:HH:mm:ss') : 'latest';
+    const label = x.recordedAt
+      ? `${dayjs(x.recordedAt).format('YYYY-MM-DDTHH:mm:ss')} (ReadOnly)`
+      : 'latest';
     return {
       label,
       value: x.id,
@@ -70,8 +80,9 @@ export const getVariableNames: (promptText: string) => string[] = (promptText) =
 
 export const getCallLLMRequestBodies: (
   prompt: Prompt,
-  snapshot: Snapshot
-) => { body: CallLLMRequest; caseId: string }[] = (prompt, snapshot) => {
+  snapshot: Snapshot,
+  config: PromptTesterConfig
+) => { body: CallLLMRequest; caseId: string }[] = (prompt, snapshot, config) => {
   return snapshot.cases.map((x) => {
     const userPrompt = replacePromptVariables(
       prompt.promptText,
@@ -80,10 +91,13 @@ export const getCallLLMRequestBodies: (
     );
     return {
       body: {
-        userPrompt,
-        systemPrompt: prompt.systemPromptText,
-        temperature: prompt.temperature,
-        modelId: prompt.modelId as ModelIds,
+        config,
+        request: {
+          userPrompt,
+          systemPrompt: prompt.systemPromptText,
+          temperature: prompt.temperature,
+          modelId: prompt.modelId as ModelIds,
+        },
       },
       caseId: x.id,
     };

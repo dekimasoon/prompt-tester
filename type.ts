@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export type PromptTesterConfig = {
+  apiKey: string;
+  apiBaseURL: string;
+  apiVersion: string;
+};
+
 export type Prompt = {
   id: string;
   name: string;
@@ -59,10 +65,21 @@ export const Models: Model[] = [
 ];
 
 export const CallLLMRequestSchema = z.object({
-  userPrompt: z.string().nonempty().trim(),
-  systemPrompt: z.string().trim(),
-  temperature: z.number().min(0).max(2),
-  modelId: z.nativeEnum(ModelIds),
+  config: z
+    .object({
+      apiKey: z.string(),
+      apiBaseURL: z.string(),
+      apiVersion: z.string(),
+    })
+    .optional(),
+  request: z
+    .object({
+      userPrompt: z.string().nonempty().trim(),
+      systemPrompt: z.string().trim(),
+      temperature: z.number().min(0).max(2),
+      modelId: z.nativeEnum(ModelIds),
+    })
+    .required(),
 });
 
 export type CallLLMRequest = z.infer<typeof CallLLMRequestSchema>;

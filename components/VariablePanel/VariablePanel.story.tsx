@@ -11,6 +11,14 @@ export const Usage = () => {
     { name: 'MailTemplate', value: '' },
   ]);
   return (
-    <VariablePanel variableValues={values} result="" onChange={setValues} onDelete={() => {}} />
+    <VariablePanel
+      variableValues={values}
+      result=""
+      isLoading={true}
+      isDisabled={false}
+      isReadOnly={false}
+      onChange={setValues}
+      onDelete={() => {}}
+    />
   );
 };

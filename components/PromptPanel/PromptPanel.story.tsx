@@ -24,7 +24,11 @@ export const Usage = () => {
       snapshotOptions={[{ label: `latest`, value: 's:1' }]}
       onPromptValueChange={setPrompt}
       onSelectedSnapshotChange={setSnapshotId}
+      isCallingLLM={true}
+      isReadOnly={false}
       onSubmit={() => {}}
+      onCancel={() => {}}
+      onDelete={() => {}}
     />
   );
 };
