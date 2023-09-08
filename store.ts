@@ -284,6 +284,15 @@ export const useStore = create<ClientStatus & StoreActions>()(
           },
 
           async callLLM() {
+            const apiKeySet = get().isConfigSetOnServerSide || get().config.apiKey !== '';
+            if (!apiKeySet) {
+              notifications.show({
+                color: 'red',
+                message: 'You have to set your API Key first.',
+                autoClose: 5_000,
+              });
+              return;
+            }
             set({
               isCallingLLM: true,
             });
