@@ -75,6 +75,7 @@ export default function HomePage() {
               onAddCase={store.addCase}
               onDelete={store.deleteCase}
               onRetry={store.callLLMbyCase}
+              onDownloadCSV={store.downloadCSV}
             />
           }
         />

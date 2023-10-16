@@ -3,12 +3,15 @@ import { devtools, persist } from 'zustand/middleware';
 import { v4 } from 'uuid';
 import { notifications } from '@mantine/notifications';
 import OpenAI from 'openai';
+import { stringify } from 'csv-stringify/sync';
+import dayjs from 'dayjs';
 import { Case, Model, Models, Prompt, PromptTesterConfig, Snapshot } from './type';
 import {
   extractJSON,
   getCallLLMRequestBody,
   getItem,
   getVariableNames,
+  replacePromptVariables,
   updateItemList,
 } from './util';
 
@@ -42,6 +45,7 @@ export type StoreActions = {
   callLLMbyCase: (caseId: string) => Promise<void>;
   cancelCallLLM: () => void;
   checkServerSideConfig: () => Promise<void>;
+  downloadCSV: () => void;
 };
 
 export type StorePrivateAction = {
@@ -470,6 +474,41 @@ export const useStore = create<ClientStatus & StoreActions & StorePrivateAction>
               isApiKeySetOnServerSide: hasApiKey,
               isApiVersionSet: hasApiVersion,
             });
+          },
+
+          downloadCSV() {
+            const prompt = getItem(get().selectedPromptId, get().prompts);
+            const snapshot = getItem(get().selectedSnapshotId, get().snapshots);
+            if (!prompt || !snapshot) {
+              return;
+            }
+            const headers = ['prompt', ...prompt.promptVariableNames, 'result', 'json'];
+            const values = snapshot.cases.map((c) => {
+              const userPrompt = replacePromptVariables(
+                prompt.promptText,
+                prompt.promptVariableNames,
+                c.variableValues
+              );
+              const variables = prompt.promptVariableNames.map((name) => {
+                const v = c.variableValues.find((x) => x.name === name);
+                return v?.value ?? '';
+              });
+              return [userPrompt, ...variables, c.result, c.extractJsonResult];
+            });
+
+            const csv = stringify([headers, ...values], {
+              bom: true,
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const objectUrl = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            const fileName = `${prompt.name}_${dayjs(snapshot.recordedAt ?? new Date()).format(
+              'YYYY-MM-DDTHH-mm-ss'
+            )}.csv`;
+            anchorElement.href = objectUrl;
+            anchorElement.download = fileName;
+            anchorElement.click();
+            anchorElement.remove();
           },
         };
       },

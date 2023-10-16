@@ -1,9 +1,9 @@
-import { Button, Group, InputWrapper, Stack, Switch, Text, Textarea, px } from '@mantine/core';
+import { useState } from 'react';
+import { Button, Group, InputWrapper, Stack, Switch } from '@mantine/core';
 import classes from './CasePanel.module.css';
 import { VariablePanel } from '../VariablePanel/VariablePanel';
 import { Case, Prompt, VariableValue } from '../../type';
-import { getValidVariableValues } from '../..//util';
-import { useState } from 'react';
+import { getValidVariableValues } from '../../util';
 
 export type CasePanelProps = {
   promptVariableNames: Prompt['promptVariableNames'];
@@ -15,6 +15,7 @@ export type CasePanelProps = {
   onDelete: (caseId: string) => void;
   onRetry: (caseId: string) => void;
   onAddCase: () => void;
+  onDownloadCSV: () => void;
 };
 
 export const CasePanel: React.FC<CasePanelProps> = (props) => {
@@ -51,6 +52,9 @@ export const CasePanel: React.FC<CasePanelProps> = (props) => {
               checked={isExtractJSON}
               onChange={(event) => setIsExtractJSON(event.currentTarget.checked)}
             />
+            <Button size="xs" color="gray" variant="outline" onClick={props.onDownloadCSV}>
+              Download CSV
+            </Button>
           </Group>
         </Group>
       </Stack>

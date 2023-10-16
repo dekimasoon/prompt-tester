@@ -57,6 +57,7 @@ export const Usage = () => {
       onDelete={action('onDelete')}
       onAddCase={action('onAddCase')}
       onRetry={action('onRetry')}
+      onDownloadCSV={action('onDownloadCSV')}
     />
   );
 };
