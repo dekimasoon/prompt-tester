@@ -1,8 +1,9 @@
-import { Button, Group, InputWrapper, Stack, Text, Textarea, px } from '@mantine/core';
+import { Button, Group, InputWrapper, Stack, Switch, Text, Textarea, px } from '@mantine/core';
 import classes from './CasePanel.module.css';
 import { VariablePanel } from '../VariablePanel/VariablePanel';
 import { Case, Prompt, VariableValue } from '../../type';
 import { getValidVariableValues } from '../..//util';
+import { useState } from 'react';
 
 export type CasePanelProps = {
   promptVariableNames: Prompt['promptVariableNames'];
@@ -12,35 +13,47 @@ export type CasePanelProps = {
   isReadOnly: boolean;
   onChange: (caseId: string, variableValues: VariableValue[]) => void;
   onDelete: (caseId: string) => void;
+  onRetry: (caseId: string) => void;
   onAddCase: () => void;
 };
 
-export const CasePanel: React.FC<CasePanelProps> = (props) => (
-  <InputWrapper label="Cases">
-    <Stack gap={32}>
-      {props.cases.map((x) => (
-        <VariablePanel
-          key={x.id}
-          variableValues={getValidVariableValues(x, props.promptVariableNames)}
-          result={x.result}
-          isDisabled={props.isCallingLLM}
-          isReadOnly={props.isReadOnly}
-          isLoading={props.loadingCaseId === x.id}
-          onChange={(value) => props.onChange(x.id, value)}
-          onDelete={() => props.onDelete(x.id)}
-        />
-      ))}
-      <Group justify="space-between">
-        <Button
-          size="xs"
-          color="gray"
-          variant="outline"
-          onClick={props.onAddCase}
-          disabled={props.isCallingLLM || props.isReadOnly}
-        >
-          Add Case
-        </Button>
-      </Group>
-    </Stack>
-  </InputWrapper>
-);
+export const CasePanel: React.FC<CasePanelProps> = (props) => {
+  const [isExtractJSON, setIsExtractJSON] = useState(false);
+  return (
+    <InputWrapper label="Cases" className={classes.root}>
+      <Stack gap={32}>
+        {props.cases.map((x) => (
+          <VariablePanel
+            key={x.id}
+            variableValues={getValidVariableValues(x, props.promptVariableNames)}
+            result={isExtractJSON ? x.extractJsonResult : x.result}
+            isDisabled={props.isCallingLLM}
+            isReadOnly={props.isReadOnly}
+            isLoading={props.loadingCaseId === x.id}
+            onChange={(value) => props.onChange(x.id, value)}
+            onDelete={() => props.onDelete(x.id)}
+            onRetry={() => props.onRetry(x.id)}
+          />
+        ))}
+        <Group justify="space-between">
+          <Button
+            size="xs"
+            color="gray"
+            variant="outline"
+            onClick={props.onAddCase}
+            disabled={props.isCallingLLM || props.isReadOnly}
+          >
+            Add Case
+          </Button>
+          <Group>
+            <Switch
+              label="Extract JSON"
+              checked={isExtractJSON}
+              onChange={(event) => setIsExtractJSON(event.currentTarget.checked)}
+            />
+          </Group>
+        </Group>
+      </Stack>
+    </InputWrapper>
+  );
+};

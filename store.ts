@@ -2,12 +2,20 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { v4 } from 'uuid';
 import { notifications } from '@mantine/notifications';
+import OpenAI from 'openai';
 import { Case, Model, Models, Prompt, PromptTesterConfig, Snapshot } from './type';
-import { getCallLLMRequestBodies, getItem, getVariableNames, updateItemList } from './util';
+import {
+  extractJSON,
+  getCallLLMRequestBody,
+  getItem,
+  getVariableNames,
+  updateItemList,
+} from './util';
 
 export type ClientStatus = {
   config: PromptTesterConfig;
-  isConfigSetOnServerSide: boolean;
+  isApiKeySetOnServerSide: boolean;
+  isApiVersionSet: boolean;
   prompts: Prompt[];
   selectedPromptId: string;
   snapshots: Snapshot[];
@@ -31,8 +39,18 @@ export type StoreActions = {
   changeSelectedSnapshot: (snapshotId: string) => void;
   createCurrentSnapshot: () => void;
   callLLM: () => Promise<void>;
+  callLLMbyCase: (caseId: string) => Promise<void>;
   cancelCallLLM: () => void;
   checkServerSideConfig: () => Promise<void>;
+};
+
+export type StorePrivateAction = {
+  _callLLMInner: (
+    abortController: AbortController,
+    prompt: Prompt,
+    targetCase: Case
+  ) => Promise<void>;
+  _beforeCallLLM: () => { prompt: Prompt | null; snapshot: Snapshot | null };
 };
 
 export const createSamplePromptAndSnapshot = () => {
@@ -83,15 +101,14 @@ export const createNewSnapshot = (prompt: Prompt): Snapshot => {
   return snapshot;
 };
 
-export const createNewCase = (prompt: Prompt): Case => {
-  return {
-    id: `c:${v4()}`,
-    variableValues: prompt.promptVariableNames.map((x) => ({ name: x, value: '' })),
-    result: '',
-  };
-};
+export const createNewCase = (prompt: Prompt): Case => ({
+  id: `c:${v4()}`,
+  variableValues: prompt.promptVariableNames.map((x) => ({ name: x, value: '' })),
+  result: '',
+  extractJsonResult: '',
+});
 
-export const useStore = create<ClientStatus & StoreActions>()(
+export const useStore = create<ClientStatus & StoreActions & StorePrivateAction>()(
   devtools(
     persist(
       (set, get) => {
@@ -102,7 +119,8 @@ export const useStore = create<ClientStatus & StoreActions>()(
             apiBaseURL: '',
             apiVersion: '',
           },
-          isConfigSetOnServerSide: false as boolean,
+          isApiKeySetOnServerSide: false as boolean,
+          isApiVersionSet: false as boolean,
           prompts: [sample.prompt],
           selectedPromptId: sample.prompt.id,
           snapshots: [sample.snapshot],
@@ -125,11 +143,12 @@ export const useStore = create<ClientStatus & StoreActions>()(
           updateConfig(value) {
             set({
               config: value,
+              isApiVersionSet: value.apiVersion !== '',
             });
           },
 
           createPrompt() {
-            const prompts = get().prompts;
+            const { prompts } = get();
             const newPrompt = createNewPrompt(prompts.length, get().availableModels);
             const newSnapshot = createNewSnapshot(newPrompt);
             set({
@@ -207,6 +226,9 @@ export const useStore = create<ClientStatus & StoreActions>()(
                 if (value.variableValues !== undefined) {
                   targetCase.variableValues = value.variableValues;
                 }
+                if (value.extractJsonResult !== undefined) {
+                  targetCase.extractJsonResult = value.extractJsonResult;
+                }
                 return {
                   ...x,
                 };
@@ -226,6 +248,7 @@ export const useStore = create<ClientStatus & StoreActions>()(
                   return x;
                 }
                 const newCases = x.cases.filter((c) => c.id !== caseId);
+                // eslint-disable-next-line no-param-reassign
                 x.cases = newCases;
                 return {
                   ...x,
@@ -282,45 +305,46 @@ export const useStore = create<ClientStatus & StoreActions>()(
               snapshots: [latest, newSnapshot, ...others],
             });
           },
-
-          async callLLM() {
-            const apiKeySet = get().isConfigSetOnServerSide || get().config.apiKey !== '';
-            if (!apiKeySet) {
-              notifications.show({
-                color: 'red',
-                message: 'You have to set your API Key first.',
-                autoClose: 5_000,
-              });
-              return;
-            }
-            set({
-              isCallingLLM: true,
-            });
-            const prompt = getItem(get().selectedPromptId, get().prompts);
-            const snapshot = getItem(get().selectedSnapshotId, get().snapshots);
+          async callLLMbyCase(caseId) {
+            const { prompt, snapshot } = get()._beforeCallLLM();
             if (!prompt || !snapshot) {
               return;
             }
-            const requests = getCallLLMRequestBodies(prompt, snapshot, get().config);
-            for (const [index, r] of Object.entries(requests)) {
-              const abortController = new AbortController();
-              set({
-                loadingCaseId: r.caseId,
-                callingLLMAbortController: abortController,
-              });
-              get().updateCase(r.caseId, { result: '' });
-              try {
-                const response = await fetch('api/llm', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(r.body),
-                  signal: abortController.signal,
+            const targetCase = snapshot.cases.find((x) => x.id === caseId);
+            if (!targetCase) {
+              return;
+            }
+            const abortController = new AbortController();
+            try {
+              await get()._callLLMInner(abortController, prompt, targetCase);
+            } catch (e) {
+              if (!abortController.signal.aborted) {
+                get().updateCase(targetCase.id, {
+                  result: '[ERROR] Request failed',
+                  extractJsonResult: '',
                 });
-                const body = await response.json();
-                get().updateCase(r.caseId, body);
+              }
+            }
+            set({
+              loadingCaseId: null,
+              isCallingLLM: false,
+              callingLLMAbortController: null,
+            });
+          },
+
+          async callLLM() {
+            const { prompt, snapshot } = get()._beforeCallLLM();
+            if (!prompt || !snapshot) {
+              return;
+            }
+            // eslint-disable-next-line no-restricted-syntax
+            for (const [index, c] of Object.entries(snapshot.cases)) {
+              const abortController = new AbortController();
+              try {
+                // eslint-disable-next-line no-await-in-loop
+                await get()._callLLMInner(abortController, prompt, c);
               } catch (e) {
+                console.log(e);
                 if (abortController.signal.aborted) {
                   break;
                 }
@@ -329,7 +353,7 @@ export const useStore = create<ClientStatus & StoreActions>()(
                   message: `Skip case #${Number(index) + 1} due to request to LLM failing`,
                   autoClose: 5_000,
                 });
-                get().updateCase(r.caseId, { result: '[ERROR] Request failed' });
+                get().updateCase(c.id, { result: '[ERROR] Request failed', extractJsonResult: '' });
               }
             }
             set({
@@ -338,6 +362,77 @@ export const useStore = create<ClientStatus & StoreActions>()(
               callingLLMAbortController: null,
             });
             get().createCurrentSnapshot();
+          },
+
+          async _callLLMInner(abortController, prompt, targetCase) {
+            set({
+              loadingCaseId: targetCase.id,
+              callingLLMAbortController: abortController,
+            });
+            get().updateCase(targetCase.id, { result: '', extractJsonResult: '' });
+            const sendFromServer = get().isApiKeySetOnServerSide;
+            const requestBody = getCallLLMRequestBody(prompt, targetCase, get().config);
+            if (sendFromServer) {
+              const response = await fetch('api/llm', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+                signal: abortController.signal,
+              });
+              const body = await response.json();
+              const extractJsonResult = extractJSON(body.result);
+              get().updateCase(targetCase.id, { result: body.result, extractJsonResult });
+            } else {
+              const { config } = get();
+              const client = new OpenAI({
+                apiKey: config.apiKey,
+                baseURL: config.apiBaseURL || undefined,
+                defaultQuery: config.apiVersion ? { 'api-version': config.apiVersion } : undefined,
+                defaultHeaders: { 'api-key': config.apiKey },
+                maxRetries: 2,
+                dangerouslyAllowBrowser: true,
+              });
+              const model = Models.find((x) => x.id === requestBody.request.modelId);
+              const userMessage = {
+                role: 'user',
+                content: requestBody.request.userPrompt,
+              } as const;
+              const response = await client.chat.completions.create(
+                {
+                  model: model!.apiName,
+                  messages: requestBody.request.systemPrompt
+                    ? [{ role: 'system', content: requestBody.request.systemPrompt }, userMessage]
+                    : [userMessage],
+                  temperature: requestBody.request.temperature,
+                },
+                {
+                  signal: abortController.signal,
+                }
+              );
+              const result = response.choices[0].message.content ?? '';
+              const extractJsonResult = extractJSON(result);
+              get().updateCase(targetCase.id, { result, extractJsonResult });
+            }
+          },
+
+          _beforeCallLLM() {
+            const apiKeySet = get().isApiKeySetOnServerSide || get().config.apiKey !== '';
+            if (!apiKeySet) {
+              notifications.show({
+                color: 'red',
+                message: 'You have to set your API Key first.',
+                autoClose: 5_000,
+              });
+            } else {
+              set({
+                isCallingLLM: true,
+              });
+            }
+            const prompt = getItem(get().selectedPromptId, get().prompts);
+            const snapshot = getItem(get().selectedSnapshotId, get().snapshots);
+            return { prompt, snapshot };
           },
 
           cancelCallLLM() {
@@ -364,15 +459,16 @@ export const useStore = create<ClientStatus & StoreActions>()(
                 'Content-Type': 'application/json',
               },
             });
-            const hasConfig = (await response.json()).hasConfig;
-            if (!hasConfig && !get().config.apiKey) {
+            const { hasApiKey, hasApiVersion } = await response.json();
+            if (!hasApiKey && !get().config.apiKey) {
               notifications.show({
                 color: 'red',
                 message: 'You have to set your API Key first.',
               });
             }
             set({
-              isConfigSetOnServerSide: hasConfig,
+              isApiKeySetOnServerSide: hasApiKey,
+              isApiVersionSet: hasApiVersion,
             });
           },
         };

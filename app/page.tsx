@@ -1,5 +1,8 @@
 'use client';
 
+import { Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { useEffect } from 'react';
 import { AppContainer } from '@/components/AppContainer/AppContainer';
 import { AppHeader } from '@/components/AppHeader/AppHeader';
 import { PanelContainer } from '@/components/PanelContainer/PanelContainer';
@@ -10,9 +13,6 @@ import { itemListToSelectOptions, snapshotListToSelectOptions } from '@/util';
 import { NoSSR } from '@/components/NoSSR/NoSSR';
 import { Models } from '@/type';
 import { ConfigModal } from '@/components/ConfigModal/ConfigModal';
-import { Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { useEffect } from 'react';
 
 export default function HomePage() {
   const store = useStore();
@@ -32,7 +32,7 @@ export default function HomePage() {
             prompts={store.prompts}
             onCreateNewPrompt={store.createPrompt}
             onChangeSelectedPrompt={store.changeSelectedPrompt}
-            showConfigButton={!store.isConfigSetOnServerSide}
+            showConfigButton={!store.isApiKeySetOnServerSide}
             onOpenConfig={open}
           />
         }
@@ -56,6 +56,7 @@ export default function HomePage() {
               snapshotOptions={snapshotListToSelectOptions(relatedSnapshots)}
               isCallingLLM={store.isCallingLLM}
               isReadOnly={snapshot.isArchived}
+              showModelOption={!store.isApiVersionSet}
               onPromptValueChange={store.updatePrompt}
               onSelectedSnapshotChange={store.changeSelectedSnapshot}
               onSubmit={store.callLLM}
@@ -73,6 +74,7 @@ export default function HomePage() {
               loadingCaseId={store.loadingCaseId}
               onAddCase={store.addCase}
               onDelete={store.deleteCase}
+              onRetry={store.callLLMbyCase}
             />
           }
         />

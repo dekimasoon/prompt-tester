@@ -1,5 +1,6 @@
 import React from 'react';
-import { VariablePanel, VariablePanelProps } from './VariablePanel';
+import { action } from '@storybook/addon-actions';
+import { VariablePanel } from './VariablePanel';
 
 export default {
   title: 'VariablePanel',
@@ -14,11 +15,12 @@ export const Usage = () => {
     <VariablePanel
       variableValues={values}
       result=""
-      isLoading={true}
+      isLoading
       isDisabled={false}
       isReadOnly={false}
       onChange={setValues}
-      onDelete={() => {}}
+      onDelete={action('onDelete')}
+      onRetry={action('onRetry')}
     />
   );
 };

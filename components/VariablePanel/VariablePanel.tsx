@@ -1,5 +1,5 @@
-import { ActionIcon, LoadingOverlay, Stack, Textarea } from '@mantine/core';
-import { IconTrash } from '@tabler/icons-react';
+import { ActionIcon, LoadingOverlay, Menu, Stack, Textarea } from '@mantine/core';
+import { IconMenu2 } from '@tabler/icons-react';
 import classes from './VariablePanel.module.css';
 import { VariableValue } from '@/type';
 
@@ -10,6 +10,7 @@ export type VariablePanelProps = {
   isDisabled: boolean;
   isReadOnly: boolean;
   onChange: (value: VariableValue[]) => void;
+  onRetry: () => void;
   onDelete: () => void;
 };
 
@@ -46,14 +47,21 @@ export const VariablePanel: React.FC<VariablePanelProps> = (props) => (
       />
       {props.result}
     </div>
-    <ActionIcon
-      className={classes.trashIcon}
-      size="sm"
-      color="gray"
-      onClick={props.onDelete}
-      disabled={props.isDisabled || props.isLoading || props.isReadOnly}
-    >
-      <IconTrash />
-    </ActionIcon>
+    <Menu>
+      <Menu.Target>
+        <ActionIcon
+          className={classes.menuButton}
+          size="sm"
+          color="gray"
+          disabled={props.isDisabled || props.isLoading || props.isReadOnly}
+        >
+          <IconMenu2 />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item onClick={props.onDelete}>Delete Case</Menu.Item>
+        <Menu.Item onClick={props.onRetry}>Retry Case</Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   </div>
 );

@@ -25,6 +25,7 @@ export type Case = {
   id: string;
   variableValues: VariableValue[];
   result: string;
+  extractJsonResult: string;
 };
 
 export type ArchiveSnapshot = {
@@ -49,19 +50,22 @@ export type Snapshot = ArchiveSnapshot | EditingSnapshot;
 
 export enum ModelIds {
   gpt35 = 'gpt35',
+  gpt3516k = 'gpt35-16k',
   gpt4 = 'gpt4',
+  gpt432k = 'gtp4-32k',
 }
 
 export type Model = {
   id: ModelIds;
   name: string;
   apiName: string;
-  streamSleepDuration: number;
 };
 
 export const Models: Model[] = [
-  { id: ModelIds.gpt35, name: 'GPT3.5', apiName: 'gpt-3.5-turbo', streamSleepDuration: 12 },
-  { id: ModelIds.gpt4, name: 'GPT4', apiName: 'gpt-4-32k', streamSleepDuration: 24 },
+  { id: ModelIds.gpt35, name: 'gpt-3.5-turbo', apiName: 'gpt-3.5-turbo' },
+  { id: ModelIds.gpt3516k, name: 'gpt-3.5-turbo-16k', apiName: 'gpt-3.5-turbo-16k' },
+  { id: ModelIds.gpt4, name: 'gpt-4', apiName: 'gpt-4' },
+  { id: ModelIds.gpt432k, name: 'gpt-4-32k', apiName: 'gpt-4-32k' },
 ];
 
 export const CallLLMRequestSchema = z.object({

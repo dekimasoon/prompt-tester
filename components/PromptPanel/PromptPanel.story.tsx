@@ -1,4 +1,5 @@
 import React from 'react';
+import { action } from '@storybook/addon-actions';
 import { PromptPanel, PromptPanelFormValue } from './PromptPanel';
 import { itemListToSelectOptions } from '../../util';
 import { Models } from '../../type';
@@ -21,14 +22,15 @@ export const Usage = () => {
       prompt={prompt}
       selectedSnapshotId={snapshotId}
       modelOptions={itemListToSelectOptions(Models)}
-      snapshotOptions={[{ label: `latest`, value: 's:1' }]}
+      snapshotOptions={[{ label: 'latest', value: 's:1' }]}
       onPromptValueChange={setPrompt}
       onSelectedSnapshotChange={setSnapshotId}
-      isCallingLLM={true}
+      isCallingLLM
+      showModelOption
       isReadOnly={false}
-      onSubmit={() => {}}
-      onCancel={() => {}}
-      onDelete={() => {}}
+      onSubmit={action('onSubmit')}
+      onCancel={action('onCancel')}
+      onDelete={action('onDelete')}
     />
   );
 };

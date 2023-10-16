@@ -1,6 +1,6 @@
-import { CallLLMRequestSchema, Models } from '@/type';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { CallLLMRequestSchema, Models } from '@/type';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -19,12 +19,6 @@ export async function POST(req: Request) {
     });
   }
 
-  if (request.userPrompt.includes('canceled')) {
-    return new NextResponse(null, {
-      status: 500,
-    });
-  }
-
   const apiKey = process.env.API_KEY || config?.apiKey;
   const baseUrl = process.env.API_BASE_URL || config?.apiBaseURL;
   const apiVersion = process.env.API_VERSION || config?.apiVersion;
@@ -33,7 +27,6 @@ export async function POST(req: Request) {
     baseURL: baseUrl || undefined,
     defaultQuery: apiVersion ? { 'api-version': apiVersion } : undefined,
     defaultHeaders: { 'api-key': apiKey },
-    timeout: 5_000,
     maxRetries: 2,
   });
 

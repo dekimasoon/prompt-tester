@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const hasConfig = !!process.env.API_KEY;
-  return NextResponse.json({ hasConfig: hasConfig });
+  const hasApiKey = !!process.env.API_KEY;
+  const hasApiVersion = !!process.env.API_VERSION;
+  return NextResponse.json({ hasApiKey, hasApiVersion });
 }

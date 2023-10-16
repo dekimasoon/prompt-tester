@@ -11,7 +11,11 @@ module.exports = {
     project: './tsconfig.json',
   },
   rules: {
+    '@typescript-eslint/no-use-before-define': 'off',
     'react/react-in-jsx-scope': 'off',
     'import/extensions': 'off',
+    'no-restricted-syntax': 'off',
+    'no-continue': 'off',
+    'no-param-reassign': 'off',
   },
 };

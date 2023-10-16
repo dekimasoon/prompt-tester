@@ -11,7 +11,7 @@ export const Usage = () => {
   const promptVariableNames = ['a', 'c'];
   const [cases, setCases] = useState<Case[]>([
     {
-      id: `c:1`,
+      id: 'c:1',
       variableValues: [
         {
           name: 'a',
@@ -27,9 +27,10 @@ export const Usage = () => {
         },
       ],
       result: 'result',
+      extractJsonResult: '',
     },
     {
-      id: `c:2`,
+      id: 'c:2',
       variableValues: [
         {
           name: 'a',
@@ -37,6 +38,7 @@ export const Usage = () => {
         },
       ],
       result: 'result2',
+      extractJsonResult: '',
     },
   ]);
   return (
@@ -54,6 +56,7 @@ export const Usage = () => {
       }}
       onDelete={action('onDelete')}
       onAddCase={action('onAddCase')}
+      onRetry={action('onRetry')}
     />
   );
 };

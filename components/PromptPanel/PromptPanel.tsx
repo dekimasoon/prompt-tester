@@ -16,9 +16,9 @@ import {
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
+import { useEffect } from 'react';
 import classes from './PromptPanel.module.css';
 import { Prompt } from '@/type';
-import { useEffect } from 'react';
 
 export type PromptPanelFormValue = Omit<Prompt, 'id' | 'promptVariableNames'>;
 
@@ -29,6 +29,7 @@ export type PromptPanelProps = {
   snapshotOptions: ComboboxItem[];
   isCallingLLM: boolean;
   isReadOnly: boolean;
+  showModelOption: boolean;
   onPromptValueChange: (value: PromptPanelFormValue) => void;
   onSelectedSnapshotChange: (value: string) => void;
   onSubmit: () => void;
@@ -81,8 +82,7 @@ export const PromptPanel: React.FC<PromptPanelProps> = (props) => {
             size="xs"
             color="red"
             variant="outline"
-            loading={props.isCallingLLM}
-            disabled={props.isReadOnly}
+            disabled={props.isCallingLLM || props.isReadOnly}
             onClick={open}
           >
             Delete
@@ -105,15 +105,17 @@ export const PromptPanel: React.FC<PromptPanelProps> = (props) => {
           </Group>
         </Group>
         <Space />
-        <Select
-          label="Model"
-          placeholder=""
-          unselectable="off"
-          data={props.modelOptions}
-          disabled={props.isCallingLLM}
-          readOnly={props.isReadOnly}
-          {...form.getInputProps('modelId')}
-        />
+        {props.showModelOption && (
+          <Select
+            label="Model"
+            placeholder=""
+            unselectable="off"
+            data={props.modelOptions}
+            disabled={props.isCallingLLM}
+            readOnly={props.isReadOnly}
+            {...form.getInputProps('modelId')}
+          />
+        )}
         <InputWrapper label="Temperature">
           <Slider
             min={0}
@@ -132,7 +134,7 @@ export const PromptPanel: React.FC<PromptPanelProps> = (props) => {
         />
         <Divider my="lg" />
         <Select
-          label="Versions"
+          label="History"
           placeholder=""
           unselectable="off"
           data={props.snapshotOptions}
