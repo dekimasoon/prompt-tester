@@ -5,8 +5,8 @@ import { MantineProvider, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 
 export const metadata = {
-  title: 'Mantine Next.js template',
-  description: 'I am using Mantine with Next.js!',
+  title: 'Prompt Tester',
+  description: 'Prompt Tester is a tool that makes it easy to verify prompts for LLMs with a GUI.',
 };
 
 export default function RootLayout({ children }: { children: any }) {
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: any }) {
     <html lang="en">
       <head>
         <ColorSchemeScript />
-        <link rel="shortcut icon" href="/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon.png" />
       </head>
       <body>
         <MantineProvider>
